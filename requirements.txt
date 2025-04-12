@@ -87,3 +87,4 @@ zstandard==0.23.0
 bs4
 streamlit
 langchain_openai
+langchain_community
