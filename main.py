@@ -37,12 +37,33 @@ prompt=ChatPromptTemplate.from_template(
 
 def create_vector_embedding():
     if "vectors" not in st.session_state:
-        st.session_state.embeddings=OpenAIEmbeddings()
-        st.session_state.loader=PyPDFDirectoryLoader("research_papers") ## Data Ingestion step
-        st.session_state.docs=st.session_state.loader.load() ## Document Loading
-        st.session_state.text_splitter=RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlap=200)
-        st.session_state.final_documents=st.session_state.text_splitter.split_documents(st.session_state.docs[:50])
-        st.session_state.vectors=FAISS.from_documents(st.session_state.final_documents,st.session_state.embeddings)
+        try:
+            st.session_state.embeddings = OpenAIEmbeddings()
+            
+            # Check if directory exists
+            import os
+            if not os.path.exists("research_papers"):
+                st.error("Directory 'research_papers' not found!")
+                return
+                
+            st.session_state.loader = PyPDFDirectoryLoader("research_papers")
+            st.session_state.docs = st.session_state.loader.load()
+            
+            if not st.session_state.docs:
+                st.warning("No documents were loaded from the directory.")
+                return
+                
+            st.session_state.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            st.session_state.final_documents = st.session_state.text_splitter.split_documents(
+                st.session_state.docs[:50] if len(st.session_state.docs) > 50 else st.session_state.docs
+            )
+            st.session_state.vectors = FAISS.from_documents(st.session_state.final_documents, st.session_state.embeddings)
+            st.success("Vector embeddings created successfully!")
+        except Exception as e:
+            st.error(f"Error creating vector embeddings: {str(e)}")
+            import traceback
+            st.error(traceback.format_exc())
+            
 st.title("RAG Document Q&A With Groq And Lama3")
 
 user_prompt=st.text_input("Enter your query from the research paper")
